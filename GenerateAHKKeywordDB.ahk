@@ -1,10 +1,16 @@
- #CommentFlag ;
- #Warn, All, OutputDebug
+#CommentFlag ;
+#Warn, All, OutputDebug
+#NoEnv
+#SingleInstance force
+SetWorkingDir, %A_ScriptDir%
+SetBatchLines, -1
 
-gCurrentVersion := "0.5.0"
+gCurrentVersion := "0.0.1"
 gDbFilename := A_ScriptDir "\AHKKeywords.sqlite"
+gDB := ""
 
-/*
+#Include <Class_SQLiteDB>
+/* *****************************************************************************
 	Title: GenerateAHKKeywordDB.ahk
 		Generate a sqlite-Database containing keywords of AutoHotkey
 
@@ -12,14 +18,31 @@ gDbFilename := A_ScriptDir "\AHKKeywords.sqlite"
 	hoppfrosch
 
 	Credits: 
+	Class-SQLiteDB - https://gist.github.com/AHK-just-me/4633751
 		
 	License: 
-	WTFPL (http://sam.zoy.org/wtfpl/)
-		
+	WTFPL (http://sam.zoy.org/wtfpl/) - 
+	*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!
+	Please consider that the license is only valid for this script itself. 
+	Used Libs might have another license!!!
+	*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!
+********************************************************************************
 */
 
 ; Do Preparation-work
 CopyTemplateDB()
+
+gDB := new SQLiteDB
+If !gDB.OpenDB(gDbFilename) {
+	MsgBox, 16, SQLite Error, % "Msg:`t" . gDB.ErrorMsg . "`nCode:`t" . gDB.ErrorCode
+	ExitApp
+}
+
+
+If !gDB.CloseDB() {
+	MsgBox, 16, SQLite Error, % "Msg:`t" . gDB.ErrorMsg . "`nCode:`t" . gDB.ErrorCode
+}
+ExitApp
 
 ;-------------------------------------------------------------------------------
 ; 	Copy the template DB to the working DB
