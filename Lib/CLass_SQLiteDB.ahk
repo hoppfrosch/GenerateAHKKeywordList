@@ -17,6 +17,7 @@
 ;                   Encoding of SQLite DBs is assumed to be UTF-8
 ;                   Minimum supported SQLite3.dll version is 3.6
 ;                   Download the current version of SQLite3.dll (and also SQlite3.exe) from www.sqlite.org
+; Credits:          just-me (http://www.autohotkey.com/board/topic/67427-class-sqlitedb-now-with-blob-and-u64-support)
 ;=======================================================================================================================
 ; This software is provided 'as-is', without any express or implied warranty.
 ; In no event will the authors be held liable for any damages arising from the
