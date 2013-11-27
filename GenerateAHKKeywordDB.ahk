@@ -5,9 +5,18 @@
 SetWorkingDir, %A_ScriptDir%
 SetBatchLines, -1
 
-gCurrentVersion := "0.0.1"
-gDbFilename := A_ScriptDir "\AHKKeywords.sqlite"
-gDB := ""
+gCurrentVersion := "0.0.2"
+gOpt := {}
+gOpt.DbFilename := A_ScriptDir "\AHKKeywords.sqlite"
+gOpt.DB := ""
+
+gOpt.AHKSources := {}
+
+gOpt.AHKSources.basepath := A_Scriptdir "\..\AutoHotkey_L\source"
+gOpt.AHKSources.files := {}
+gOpt.AHKSources.files.version := gOpt.AHKSources.basepath "\ahkversion.h"
+
+; AHK-Sourcefiles to be parsed
 
 #Include <Class_SQLiteDB>
 /* *****************************************************************************
@@ -30,19 +39,57 @@ gDB := ""
 */
 
 ; Do Preparation-work
-CopyTemplateDB()
+CopyTemplateDB(1)
 
-gDB := new SQLiteDB
-If !gDB.OpenDB(gDbFilename) {
-	MsgBox, 16, SQLite Error, % "Msg:`t" . gDB.ErrorMsg . "`nCode:`t" . gDB.ErrorCode
+DB := new SQLiteDB
+gOpt.DB := DB
+If !DB.OpenDB(gOpt.DBFilename) {
+	MsgBox, 16, SQLite Error, % "Msg:`t" . DB.ErrorMsg . "`nCode:`t" . DB.ErrorCode
 	ExitApp
 }
 
+version := ParseAHKVersion(gOpt.AHKSources.files.version)
+DB.Exec("BEGIN TRANSACTION;")
+SQL := "INSERT INTO ahkversions VALUES(1,'" version "');"
+MsgBox % SQL
+If !DB.Exec(SQL)
+   MsgBox, 16, SQLite Error, % "Msg:`t" . DB.ErrorMsg . "`nCode:`t" . DB.ErrorCode  	
+DB.Exec("COMMIT TRANSACTION;")
 
-If !gDB.CloseDB() {
-	MsgBox, 16, SQLite Error, % "Msg:`t" . gDB.ErrorMsg . "`nCode:`t" . gDB.ErrorCode
+
+If !DB.CloseDB() {
+	MsgBox, 16, SQLite Error, % "Msg:`t" . DB.ErrorMsg . "`nCode:`t" . DB.ErrorCode
 }
 ExitApp
+
+;-------------------------------------------------------------------------------
+; 	Parse AHK version from sources
+;
+; 	Parameter: 
+;		source - filename of source of AHK version
+;	Returns:
+;		AHK-version as String
+ParseAHKVersion(sourcefile) {
+
+	x := CallStack(10,0)
+	version := ""
+	file := FileOpen(sourcefile, "r") ; read the file ("r"), share all access except for delete ("-d")
+	if !IsObject(file)
+	{
+		MsgBox % "Can't open " FileName " for reading."
+		return version
+	}
+	while (Line := File.ReadLine()) {
+		FoundPos := RegexMatch(Line, "O)\s*AHK_VERSION\s*\""(.*)\""", Match)
+		if (FoundPos > 0)  {
+			version := Match.value(1)
+			Break
+		}
+	}
+	file.Close()
+
+	return version
+}
 
 ;-------------------------------------------------------------------------------
 ; 	Copy the template DB to the working DB
@@ -50,15 +97,15 @@ ExitApp
 ; 	Parameter: 
 ;		forceOverwrite - Overwrite working DB unless it already exists
 CopyTemplateDB(forceOverwrite:=0){
-	Global gDbFilename
+	Global gOpt
 	templatedb := A_ScriptDir "\Template\AHKKeywords.sqlite"
 
 	; Copy empty database - if it doesn't exist
-	if (!FileExist(gDbFilename) || forceOverwrite = 1) {
-		if(FileExist(gDbFilename)) {
-			FileDelete, % gDbFilename
+	if (!FileExist(gOpt.DbFilename) || forceOverwrite = 1) {
+		if(FileExist(gOpt.DbFilename)) {
+			FileDelete, % gOpt.DbFilename
 		}
-		FileCopy , % templatedb, % gDbFilename
+		FileCopy , % templatedb, % gOpt.DbFilename
 	}
 	return
 }
