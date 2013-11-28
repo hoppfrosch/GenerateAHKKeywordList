@@ -3,3 +3,5 @@
 /SQLiteDB_sample.ahk
 /BLOB_sample.ahk
 Lib/sqlite3.def
+*.bak
+DBAExampleOOP.ahk
