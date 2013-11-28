@@ -5,7 +5,7 @@
 SetWorkingDir, %A_ScriptDir%
 SetBatchLines, -1
 
-gCurrentVersion := "0.0.2"
+gCurrentVersion := "0.0.3"
 gOpt := {}
 gOpt.DbFilename := A_ScriptDir "\AHKKeywords.sqlite"
 gOpt.DB := ""
@@ -18,7 +18,7 @@ gOpt.AHKSources.files.version := gOpt.AHKSources.basepath "\ahkversion.h"
 
 ; AHK-Sourcefiles to be parsed
 
-#Include <Class_SQLiteDB>
+#Include <DBA>
 /* *****************************************************************************
 	Title: GenerateAHKKeywordDB.ahk
 		Generate a sqlite-Database containing keywords of AutoHotkey
@@ -27,7 +27,7 @@ gOpt.AHKSources.files.version := gOpt.AHKSources.basepath "\ahkversion.h"
 	hoppfrosch
 
 	Credits: 
-	Class-SQLiteDB - https://gist.github.com/AHK-just-me/4633751
+	DBA - IsNull (https://github.com/IsNull/ahkDBA)
 		
 	License: 
 	WTFPL (http://sam.zoy.org/wtfpl/) - 
@@ -41,55 +41,18 @@ gOpt.AHKSources.files.version := gOpt.AHKSources.basepath "\ahkversion.h"
 ; Do Preparation-work
 CopyTemplateDB(1)
 
-DB := new SQLiteDB
-gOpt.DB := DB
-If !DB.OpenDB(gOpt.DBFilename) {
-	MsgBox, 16, SQLite Error, % "Msg:`t" . DB.ErrorMsg . "`nCode:`t" . DB.ErrorCode
+try {
+	DB := DBA.DataBaseFactory.OpenDataBase("SQLite", gOpt.DBFilename)
+}
+catch e {
+	MsgBox,16, Error, % "Failed to create connection. Check your Connection string and DB Settings!`n`n" ExceptionDetail(e)
 	ExitApp
 }
 
-version := ParseAHKVersion(gOpt.AHKSources.files.version)
-DB.Exec("BEGIN TRANSACTION;")
-SQL := "INSERT INTO ahkversions VALUES(1,'" version "');"
-MsgBox % SQL
-If !DB.Exec(SQL)
-   MsgBox, 16, SQLite Error, % "Msg:`t" . DB.ErrorMsg . "`nCode:`t" . DB.ErrorCode  	
-DB.Exec("COMMIT TRANSACTION;")
+if(IsObject(DB))
+	DB.Close()
 
-
-If !DB.CloseDB() {
-	MsgBox, 16, SQLite Error, % "Msg:`t" . DB.ErrorMsg . "`nCode:`t" . DB.ErrorCode
-}
 ExitApp
-
-;-------------------------------------------------------------------------------
-; 	Parse AHK version from sources
-;
-; 	Parameter: 
-;		source - filename of source of AHK version
-;	Returns:
-;		AHK-version as String
-ParseAHKVersion(sourcefile) {
-
-	x := CallStack(10,0)
-	version := ""
-	file := FileOpen(sourcefile, "r") ; read the file ("r"), share all access except for delete ("-d")
-	if !IsObject(file)
-	{
-		MsgBox % "Can't open " FileName " for reading."
-		return version
-	}
-	while (Line := File.ReadLine()) {
-		FoundPos := RegexMatch(Line, "O)\s*AHK_VERSION\s*\""(.*)\""", Match)
-		if (FoundPos > 0)  {
-			version := Match.value(1)
-			Break
-		}
-	}
-	file.Close()
-
-	return version
-}
 
 ;-------------------------------------------------------------------------------
 ; 	Copy the template DB to the working DB
