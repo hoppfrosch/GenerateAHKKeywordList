@@ -5,11 +5,20 @@
 SetWorkingDir, %A_ScriptDir%
 SetBatchLines, -1
 
-gCurrentVersion := "0.0.1"
-gDbFilename := A_ScriptDir "\AHKKeywords.sqlite"
-gDB := ""
+gCurrentVersion := "0.0.3"
+gOpt := {}
+gOpt.DbFilename := A_ScriptDir "\AHKKeywords.sqlite"
+gOpt.DB := ""
 
-#Include <Class_SQLiteDB>
+gOpt.AHKSources := {}
+
+gOpt.AHKSources.basepath := A_Scriptdir "\..\AutoHotkey_L\source"
+gOpt.AHKSources.files := {}
+gOpt.AHKSources.files.version := gOpt.AHKSources.basepath "\ahkversion.h"
+
+; AHK-Sourcefiles to be parsed
+
+#Include <DBA>
 /* *****************************************************************************
 	Title: GenerateAHKKeywordDB.ahk
 		Generate a sqlite-Database containing keywords of AutoHotkey
@@ -18,7 +27,7 @@ gDB := ""
 	hoppfrosch
 
 	Credits: 
-	Class-SQLiteDB - https://gist.github.com/AHK-just-me/4633751
+	DBA - IsNull (https://github.com/IsNull/ahkDBA)
 		
 	License: 
 	WTFPL (http://sam.zoy.org/wtfpl/) - 
@@ -30,18 +39,19 @@ gDB := ""
 */
 
 ; Do Preparation-work
-CopyTemplateDB()
+CopyTemplateDB(1)
 
-gDB := new SQLiteDB
-If !gDB.OpenDB(gDbFilename) {
-	MsgBox, 16, SQLite Error, % "Msg:`t" . gDB.ErrorMsg . "`nCode:`t" . gDB.ErrorCode
+try {
+	DB := DBA.DataBaseFactory.OpenDataBase("SQLite", gOpt.DBFilename)
+}
+catch e {
+	MsgBox,16, Error, % "Failed to create connection. Check your Connection string and DB Settings!`n`n" ExceptionDetail(e)
 	ExitApp
 }
 
+if(IsObject(DB))
+	DB.Close()
 
-If !gDB.CloseDB() {
-	MsgBox, 16, SQLite Error, % "Msg:`t" . gDB.ErrorMsg . "`nCode:`t" . gDB.ErrorCode
-}
 ExitApp
 
 ;-------------------------------------------------------------------------------
@@ -50,15 +60,15 @@ ExitApp
 ; 	Parameter: 
 ;		forceOverwrite - Overwrite working DB unless it already exists
 CopyTemplateDB(forceOverwrite:=0){
-	Global gDbFilename
+	Global gOpt
 	templatedb := A_ScriptDir "\Template\AHKKeywords.sqlite"
 
 	; Copy empty database - if it doesn't exist
-	if (!FileExist(gDbFilename) || forceOverwrite = 1) {
-		if(FileExist(gDbFilename)) {
-			FileDelete, % gDbFilename
+	if (!FileExist(gOpt.DbFilename) || forceOverwrite = 1) {
+		if(FileExist(gOpt.DbFilename)) {
+			FileDelete, % gOpt.DbFilename
 		}
-		FileCopy , % templatedb, % gDbFilename
+		FileCopy , % templatedb, % gOpt.DbFilename
 	}
 	return
 }
