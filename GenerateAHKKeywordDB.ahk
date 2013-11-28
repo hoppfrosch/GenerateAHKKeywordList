@@ -49,10 +49,42 @@ catch e {
 	ExitApp
 }
 
+version := ParseAHKVersion(gOpt.AHKSources.files.version)
+record := {}
+record.version := version
+DB.Insert(record, "ahkversions")
+
 if(IsObject(DB))
 	DB.Close()
 
 ExitApp
+
+;-------------------------------------------------------------------------------
+; 	Parse AHK version from sources
+;
+; 	Parameter: 
+;		source - filename of source of AHK version
+;	Returns:
+;		AHK-version as String
+ParseAHKVersion(sourcefile) {
+	version := ""
+	file := FileOpen(sourcefile, "r") ; read the file ("r"), share all access except for delete ("-d")
+	if !IsObject(file)
+	{
+		MsgBox % "Can't open " FileName " for reading."
+		return version
+	}
+	while (Line := File.ReadLine()) {
+		FoundPos := RegexMatch(Line, "O)\s*AHK_VERSION\s*\""(.*)\""", Match)
+		if (FoundPos > 0)  {
+			version := Match.value(1)
+			Break
+		}
+	}
+	file.Close()
+
+	return version
+}
 
 ;-------------------------------------------------------------------------------
 ; 	Copy the template DB to the working DB
