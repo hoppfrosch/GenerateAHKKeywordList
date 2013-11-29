@@ -5,7 +5,7 @@
 SetWorkingDir, %A_ScriptDir%
 SetBatchLines, -1
 
-gCurrentVersion := "0.0.3"
+gCurrentVersion := "0.0.4"
 gOpt := {}
 gOpt.DbFilename := A_ScriptDir "\AHKKeywords.sqlite"
 gOpt.DB := ""
@@ -26,8 +26,8 @@ gOpt.AHKSources.files.version := gOpt.AHKSources.basepath "\ahkversion.h"
 	Author: 
 	hoppfrosch
 
+	DBA - IsNull (https://github.com/IsNull/ahkDBA) (http://www.autohotkey.com/board/topic/71179-ahk-l-dba-16-oop-sql-database-sqlite-mysql-ado)
 	Credits: 
-	DBA - IsNull (https://github.com/IsNull/ahkDBA)
 		
 	License: 
 	WTFPL (http://sam.zoy.org/wtfpl/) - 
@@ -49,10 +49,34 @@ catch e {
 	ExitApp
 }
 
+; ----------------------------------------------------------------------------------
+; Gather Information about AHK-Version
 version := ParseAHKVersion(gOpt.AHKSources.files.version)
-record := {}
-record.version := version
-DB.Insert(record, "ahkversions")
+
+; Check wether the version is already registered in DB
+rs := DB.OpenRecordSet("Select id from ahkversions where version='" version "'")
+if (rs["id"] == "") {
+	record := {}
+	record.version := version
+	res := DB.Insert(record, "ahkversions")
+	rs := DB.OpenRecordSet("Select id from ahkversions where version='" version "'")
+}
+gOpt.Data := {}
+gOpt.Data.idAHKVersion := rs["id"]
+
+;MsgBox % gOpt.Data.idAHKVersion
+;table := DB.Query("Select * from ahkversions")
+;columnCount := table.Columns.Count()
+;for each, row in table.Rows
+;{
+;	 MsgBox % row.ToString()
+;}
+;rs := DB.OpenRecordSet("Select version from ahkversions where id='" gOpt.Data.idAHKVersion "'")
+;id := rs["id"]
+;for each, row in table.Rows
+;{
+;	MsgBox % rs["version"]
+;}
 
 if(IsObject(DB))
 	DB.Close()
